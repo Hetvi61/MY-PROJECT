@@ -54,18 +54,13 @@ async function runJobs() {
 
 /* ================= TEMP BYPASS (POST ONLY) ================= */
 export async function POST() {
-  const processed = await runJobs()
-
   return NextResponse.json({
-    success: true,
-    processed,
-    auth: 'BYPASSED_FOR_TEST',
+    message: 'THIS IS DEFINITELY MY CODE',
   })
 }
 
-/* ================= TEMP BYPASS (GET ALSO) ================= */
 export async function GET() {
   return NextResponse.json({
-    message: 'RUNNER BYPASS ACTIVE (GET)',
+    message: 'THIS IS DEFINITELY MY CODE (GET)',
   })
 }
