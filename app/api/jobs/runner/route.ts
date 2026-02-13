@@ -60,11 +60,12 @@ async function runJobs() {
   return jobs.length
 }
 
+
 /* ================= AUTO (GitHub Actions / Cron) ================= */
 export async function POST(req: Request) {
   try {
     // 🔐 SECURITY CHECK
-    const secret = req.headers.get('x-cron-secret')
+    const secret = req.headers.get('CRON-SECRET')
 
     if (secret !== process.env.CRON_SECRET) {
       return NextResponse.json(
