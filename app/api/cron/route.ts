@@ -1,6 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server"
 
 export async function GET() {
-  console.log('Cron job executed')
+  const res = await fetch(
+    `${process.env.BASE_URL}/api/jobs/runner`,
+    { method: "POST" }
+  )
+
   return NextResponse.json({ success: true })
 }
