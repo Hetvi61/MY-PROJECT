@@ -21,6 +21,8 @@ async function runJobs() {
         job_status: 'in_progress',
       })
 
+      // TODO: WhatsApp / Email / API execution
+
       await PastJob.create({
         client_name: job.client_name,
         job_name: job.job_name,
@@ -34,6 +36,8 @@ async function runJobs() {
 
       await ScheduledJob.findByIdAndDelete(job._id)
     } catch (err) {
+      console.error('Job failed:', err)
+
       await PastJob.create({
         client_name: job.client_name,
         job_name: job.job_name,
@@ -52,15 +56,42 @@ async function runJobs() {
   return jobs.length
 }
 
-/* ================= TEMP BYPASS (POST ONLY) ================= */
-export async function POST() {
+/* ================= CRON / SCHEDULER ================= */
+export async function POST(req: Request) {
+  const headerSecret = req.headers.get('x-cron-secret')
+  const envSecret = process.env.CRON_SECRET?.trim()
+
+  if (!envSecret || headerSecret !== envSecret) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
+  const processed = await runJobs()
+
   return NextResponse.json({
-    message: 'THIS IS DEFINITELY MY CODE',
+    success: true,
+    processed,
   })
 }
 
-export async function GET() {
+/* ================= OPTIONAL MANUAL ================= */
+export async function GET(req: Request) {
+  const headerSecret = req.headers.get('x-cron-secret')
+  const envSecret = process.env.CRON_SECRET?.trim()
+
+  if (!envSecret || headerSecret !== envSecret) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
+  const processed = await runJobs()
+
   return NextResponse.json({
-    message: 'THIS IS DEFINITELY MY CODE (GET)',
+    success: true,
+    processed,
   })
 }
