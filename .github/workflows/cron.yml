@@ -1,0 +1,15 @@
+name: Job Scheduler
+
+on:
+  schedule:
+    - cron: "*/1 * * * *"   # runs every 1 minutes
+  workflow_dispatch:        # allows manual run from GitHub UI
+
+jobs:
+  run-jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call job runner API
+        run: |
+          curl -X POST https://your-app.vercel.app/api/jobs/runner \
+          -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"
