@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server'
 import { connectDB } from '@/lib/mongodb'
 import ScheduledJob from '@/models/ScheduledJob'
@@ -8,7 +9,6 @@ async function runJobs() {
   await connectDB()
   const now = new Date()
 
-  // 🔹 FETCH ONLY PENDING & DUE JOBS
   const jobs = await ScheduledJob.find({
     scheduled_datetime: { $lte: now },
     job_status: 'to_do',
@@ -16,14 +16,15 @@ async function runJobs() {
 
   for (const job of jobs) {
     try {
-      // 🔹 MARK JOB AS IN_PROGRESS (VERY IMPORTANT)
+      // 🔹 Mark as in progress
       await ScheduledJob.findByIdAndUpdate(job._id, {
         job_status: 'in_progress',
       })
 
-      // 🔹 FUTURE: WhatsApp / Email / API logic will go here
+      // 🔹 FUTURE ACTION (WhatsApp / Email / API)
+      // await sendMessage(job)
 
-      // ✅ MOVE TO PAST JOBS (SUCCESS)
+      // ✅ Success → move to past jobs
       await PastJob.create({
         client_name: job.client_name,
         job_name: job.job_name,
@@ -35,13 +36,12 @@ async function runJobs() {
         delivered_datetime: new Date(),
       })
 
-      // ✅ REMOVE FROM SCHEDULED JOBS
       await ScheduledJob.findByIdAndDelete(job._id)
 
     } catch (err) {
       console.error('Job failed:', err)
 
-      // ❌ MOVE TO PAST JOBS (FAILED)
+      // ❌ Failure → move to past jobs
       await PastJob.create({
         client_name: job.client_name,
         job_name: job.job_name,
@@ -60,38 +60,59 @@ async function runJobs() {
   return jobs.length
 }
 
-/* ================= VERCEL CRON (AUTO) ================= */
-/* Cron ALWAYS uses GET */
-export async function GET() {
+/* ================= AUTO (GitHub Actions / Cron) ================= */
+export async function POST(req: Request) {
   try {
+    // 🔐 SECURITY CHECK
+    const secret = req.headers.get('x-cron-secret')
+
+    if (secret !== process.env.CRON_SECRET) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const processed = await runJobs()
+
     return NextResponse.json({
       success: true,
-      source: 'cron',
+      source: 'scheduler',
       processed,
     })
   } catch (error) {
-    console.error('Runner GET error:', error)
+    console.error('Runner POST error:', error)
     return NextResponse.json(
-      { error: 'Runner failed (cron)' },
+      { error: 'Runner failed' },
       { status: 500 }
     )
   }
 }
 
-/* ================= MANUAL RUN (BUTTON / POSTMAN) ================= */
-export async function POST() {
+/* ================= OPTIONAL MANUAL (ADMIN BUTTON) ================= */
+/* Call this from admin panel with same secret */
+export async function GET(req: Request) {
   try {
+    const secret = req.headers.get('x-cron-secret')
+
+    if (secret !== process.env.CRON_SECRET) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const processed = await runJobs()
+
     return NextResponse.json({
       success: true,
       source: 'manual',
       processed,
     })
   } catch (error) {
-    console.error('Runner POST error:', error)
+    console.error('Runner GET error:', error)
     return NextResponse.json(
-      { error: 'Runner failed (manual)' },
+      { error: 'Runner failed' },
       { status: 500 }
     )
   }
