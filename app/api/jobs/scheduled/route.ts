@@ -15,13 +15,23 @@ export async function POST(req: Request) {
       )
     }
 
+    // 🔴 FIX STARTS HERE
+    // body.scheduled_datetime comes in IST (local time)
+    const istDate = new Date(body.scheduled_datetime)
+
+    // Convert IST → UTC
+    const utcDate = new Date(
+      istDate.getTime() - (5.5 * 60 * 60 * 1000)
+    )
+    // 🔴 FIX ENDS HERE
+
     const job = await ScheduledJob.create({
       client_name: body.client_name,
       job_name: body.job_name,
       job_type: body.job_type || 'post',
       job_json: body.job_json,
       job_media_url: body.job_media_url,
-      scheduled_datetime: body.scheduled_datetime,
+      scheduled_datetime: utcDate, // ✅ FIXED
       created_datetime: new Date(),
       job_status: 'to_do',
     })
