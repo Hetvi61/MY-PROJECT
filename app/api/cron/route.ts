@@ -6,7 +6,7 @@ export async function GET() {
     {
       method: "POST",
       headers: {
-        "x-cron-secret": process.env.CRON_SECRET!,
+        "CRON_SECRET": process.env.CRON_SECRET!,
       },
     }
   )

@@ -94,7 +94,7 @@ export async function POST(req: Request) {
 /* Call this from admin panel with same secret */
 export async function GET(req: Request) {
   try {
-    const secret = req.headers.get('x-cron-secret')
+    const secret = req.headers.get('CRON_SECRET')
 
     if (secret !== process.env.CRON_SECRET) {
       return NextResponse.json(
