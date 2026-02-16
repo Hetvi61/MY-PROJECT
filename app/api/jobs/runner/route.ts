@@ -58,6 +58,7 @@ async function runJobs() {
 
 /* ================= CRON / SCHEDULER ================= */
 export async function POST(req: Request) {
+  console.log('RUNNER HIT AT', new Date().toISOString())
   const headerSecret = req.headers.get('x-cron-secret')
   const envSecret = process.env.CRON_SECRET?.trim()
 
