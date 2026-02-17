@@ -5,7 +5,13 @@ import { useEffect, useState } from 'react'
 
 /* ================= IST FORMAT HELPER ================= */
 function formatIST(dateString: string) {
-  return new Date(dateString).toLocaleString('en-IN', {
+  // Force UTC parsing if backend sent date without timezone
+  const iso =
+    typeof dateString === 'string' && !dateString.endsWith('Z')
+      ? dateString + 'Z'
+      : dateString
+
+  return new Date(iso).toLocaleString('en-IN', {
     timeZone: 'Asia/Kolkata',
     day: '2-digit',
     month: '2-digit',
@@ -139,7 +145,7 @@ export default function ScheduledJobsPage() {
               <td className="border p-2">{j.client_name}</td>
               <td className="border p-2">{j.job_type}</td>
 
-              {/* ✅ IST DISPLAY */}
+              {/* ✅ IST DISPLAY (FIXED) */}
               <td className="border p-2">
                 {formatIST(j.scheduled_datetime)}
               </td>
@@ -152,4 +158,3 @@ export default function ScheduledJobsPage() {
     </div>
   )
 }
-
