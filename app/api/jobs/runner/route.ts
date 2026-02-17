@@ -4,7 +4,15 @@ import { NextResponse } from 'next/server'
 import { connectDB } from '@/lib/mongodb'
 import ScheduledJob from '@/models/ScheduledJob'
 import PastJob from '@/models/PastJob'
-import { sendScheduledWhatsAppJob } from '@/lib/whatsapp'
+
+/* ✅ ADD THESE IMPORTS */
+import {
+  initWhatsApp,
+  sendScheduledWhatsAppJob,
+} from '@/lib/whatsapp'
+
+/* ✅ INITIALIZE WHATSAPP ONCE */
+initWhatsApp()
 
 /* ================= CORE LOGIC ================= */
 async function runJobs() {
