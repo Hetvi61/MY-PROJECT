@@ -1,7 +1,9 @@
 'use client'
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 
-/* ================= IST FORMAT HELPER (NEW) ================= */
+/* ================= IST FORMAT HELPER ================= */
 function formatIST(dateString: string) {
   return new Date(dateString).toLocaleString('en-IN', {
     timeZone: 'Asia/Kolkata',
@@ -13,7 +15,7 @@ function formatIST(dateString: string) {
     hour12: true,
   })
 }
-/* =========================================================== */
+/* ===================================================== */
 
 export default function ScheduledJobsPage() {
   const [jobs, setJobs] = useState<any[]>([])
@@ -27,12 +29,10 @@ export default function ScheduledJobsPage() {
 
   // ================= LOAD DATA =================
   useEffect(() => {
-    // Load scheduled jobs
     fetch('/api/jobs/scheduled')
       .then(res => res.json())
       .then(data => setJobs(Array.isArray(data) ? data : []))
 
-    // Load clients for dropdown
     fetch('/api/client')
       .then(res => res.json())
       .then(data => {
@@ -139,7 +139,7 @@ export default function ScheduledJobsPage() {
               <td className="border p-2">{j.client_name}</td>
               <td className="border p-2">{j.job_type}</td>
 
-              {/* ✅ ONLY THIS LINE CHANGED */}
+              {/* ✅ IST DISPLAY */}
               <td className="border p-2">
                 {formatIST(j.scheduled_datetime)}
               </td>
@@ -152,3 +152,4 @@ export default function ScheduledJobsPage() {
     </div>
   )
 }
+
