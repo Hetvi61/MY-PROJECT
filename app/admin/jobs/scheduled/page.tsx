@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 
 /* ================= IST FORMAT HELPER ================= */
 function formatIST(dateString: string) {
-  // Force UTC parsing if backend sent date without timezone
   const iso =
     typeof dateString === 'string' && !dateString.endsWith('Z')
       ? dateString + 'Z'
@@ -31,9 +30,14 @@ export default function ScheduledJobsPage() {
     client_name: '',
     scheduled_datetime: '',
     job_type: 'post',
+
+    // 🟢 WhatsApp fields (NEW)
+    whatsapp_number: '',
+    message_text: '',
+    job_media_url: '',
   })
 
-  // ================= LOAD DATA =================
+  /* ================= LOAD DATA ================= */
   useEffect(() => {
     fetch('/api/jobs/scheduled')
       .then(res => res.json())
@@ -42,20 +46,24 @@ export default function ScheduledJobsPage() {
     fetch('/api/client')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          setClients(data)
-        } else if (Array.isArray(data.data)) {
-          setClients(data.data)
-        } else {
-          setClients([])
-        }
+        if (Array.isArray(data)) setClients(data)
+        else if (Array.isArray(data.data)) setClients(data.data)
+        else setClients([])
       })
   }, [])
 
-  // ================= CREATE JOB =================
+  /* ================= CREATE JOB ================= */
   async function submit() {
     if (!form.job_name || !form.client_name || !form.scheduled_datetime) {
       alert('Please fill all required fields')
+      return
+    }
+
+    if (
+      form.job_type === 'whatsapp' &&
+      (!form.whatsapp_number || !form.message_text)
+    ) {
+      alert('WhatsApp number and message are required')
       return
     }
 
@@ -106,6 +114,7 @@ export default function ScheduledJobsPage() {
           >
             <option value="post">Post</option>
             <option value="video">Video</option>
+            <option value="whatsapp">WhatsApp</option>
           </select>
 
           <input
@@ -115,6 +124,37 @@ export default function ScheduledJobsPage() {
               setForm({ ...form, scheduled_datetime: e.target.value })
             }
           />
+
+          {/* ========== WHATSAPP FIELDS (NEW) ========== */}
+          {form.job_type === 'whatsapp' && (
+            <>
+              <input
+                className="border p-2 rounded"
+                placeholder="WhatsApp Number (91XXXXXXXXXX)"
+                onChange={e =>
+                  setForm({ ...form, whatsapp_number: e.target.value })
+                }
+              />
+
+              <textarea
+                className="border p-2 rounded col-span-2"
+                placeholder="Message Text"
+                onChange={e =>
+                  setForm({ ...form, message_text: e.target.value })
+                }
+              />
+
+              <input
+                className="border p-2 rounded col-span-2"
+                placeholder="Media URL (optional)"
+                onChange={e =>
+                  setForm({ ...form, job_media_url: e.target.value })
+                }
+              />
+            </>
+          )}
+          {/* ========================================== */}
+
         </div>
 
         <div className="mt-6">
@@ -144,12 +184,9 @@ export default function ScheduledJobsPage() {
               <td className="border p-2">{j.job_name}</td>
               <td className="border p-2">{j.client_name}</td>
               <td className="border p-2">{j.job_type}</td>
-
-              {/* ✅ IST DISPLAY (FIXED) */}
               <td className="border p-2">
                 {formatIST(j.scheduled_datetime)}
               </td>
-
               <td className="border p-2">{j.job_status}</td>
             </tr>
           ))}
