@@ -47,3 +47,5 @@ whatsapp-session/
 
 # Uploads (optional, only if user-generated)
 public/uploads/
+# WhatsApp worker (local / runtime)
+whatsapp-worker/

@@ -5,11 +5,6 @@ import { connectDB } from '@/lib/mongodb'
 import ScheduledJob from '@/models/ScheduledJob'
 import PastJob from '@/models/PastJob'
 
-import {
-  initWhatsApp,
-  sendScheduledWhatsAppJob,
-} from '@/lib/whatsapp'
-
 /* ================= CORE LOGIC ================= */
 async function runJobs() {
   await connectDB()
@@ -20,17 +15,14 @@ async function runJobs() {
     job_status: 'to_do',
   })
 
-  // 🔑 Initialize WhatsApp (best effort)
-  initWhatsApp()
-
   for (const job of jobs) {
     try {
-      // 🔹 mark job in progress
+      // 🔹 Mark job in progress
       await ScheduledJob.findByIdAndUpdate(job._id, {
         job_status: 'in_progress',
       })
 
-      /* ================= WHATSAPP SEND ================= */
+      /* ================= WHATSAPP TASK ================= */
       if (job.job_type === 'whatsapp') {
         let phone = job.job_json?.phone?.toString() || ''
         phone = phone.replace(/\D/g, '')
@@ -40,11 +32,23 @@ async function runJobs() {
           throw new Error('Invalid WhatsApp payload')
         }
 
-        await sendScheduledWhatsAppJob({
-          phone,
-          message: job.job_json.message,
-          mediaUrl: job.job_media_url || undefined,
-        })
+        // 🚀 CALL WHATSAPP WORKER (NOT whatsapp-web.js here)
+        const res = await fetch(
+          process.env.WHATSAPP_WORKER_URL!,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone,
+              message: job.job_json.message,
+              mediaUrl: job.job_media_url || undefined,
+            }),
+          }
+        )
+
+        if (!res.ok) {
+          throw new Error('WhatsApp worker failed')
+        }
       }
 
       /* ================= MOVE TO PAST (SUCCESS) ================= */
