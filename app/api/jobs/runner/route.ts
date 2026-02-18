@@ -26,28 +26,31 @@ async function runJobs() {
       if (job.job_type === 'whatsapp') {
         let phone = job.job_json?.phone?.toString() || ''
         phone = phone.replace(/\D/g, '')
+
         if (phone.length === 10) phone = `91${phone}`
+
+        // ✅ REQUIRED by WhatsApp
+        const whatsappTo = `${phone}@c.us`
 
         if (!phone || !job.job_json?.message) {
           throw new Error('Invalid WhatsApp payload')
         }
 
-        // 🚀 CALL WHATSAPP WORKER (NOT whatsapp-web.js here)
-        const res = await fetch(
-          process.env.WHATSAPP_WORKER_URL!,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              phone,
-              message: job.job_json.message,
-              mediaUrl: job.job_media_url || undefined,
-            }),
-          }
-        )
+        const res = await fetch(process.env.WHATSAPP_WORKER_URL!, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: whatsappTo,
+            message: job.job_json.message,
+            mediaUrl: job.job_media_url || null,
+          }),
+        })
+
+        const data = await res.json()
 
         if (!res.ok) {
-          throw new Error('WhatsApp worker failed')
+          console.error('WhatsApp worker error:', data)
+          throw new Error(data?.error || 'WhatsApp worker failed')
         }
       }
 
@@ -65,8 +68,8 @@ async function runJobs() {
 
       await ScheduledJob.findByIdAndDelete(job._id)
 
-    } catch (err) {
-      console.error('Job failed:', err)
+    } catch (err: any) {
+      console.error('❌ Job failed:', err.message)
 
       /* ================= MOVE TO PAST (FAILED) ================= */
       await PastJob.create({
