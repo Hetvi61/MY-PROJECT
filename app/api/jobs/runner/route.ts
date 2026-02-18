@@ -11,9 +11,6 @@ import {
   sendScheduledWhatsAppJob,
 } from '@/lib/whatsapp'
 
-// ✅ Initialize WhatsApp once
-initWhatsApp()
-
 /* ================= CORE LOGIC ================= */
 async function runJobs() {
   await connectDB()
@@ -24,31 +21,42 @@ async function runJobs() {
     job_status: 'to_do',
   })
 
+  // ✅ initialize WhatsApp INSIDE execution
+  initWhatsApp()
+
   const waStatus = getWhatsAppStatus()
 
   for (const job of jobs) {
     try {
-      // 🔹 Mark as in progress
+      // 🔹 mark in progress
       await ScheduledJob.findByIdAndUpdate(job._id, {
         job_status: 'in_progress',
       })
 
-      /* ================= WHATSAPP SAFETY ================= */
-      if (job.job_type === 'post') {
+      /* ================= WHATSAPP TASK ================= */
+      if (job.job_type === 'whatsapp') {
         if (!waStatus.ready) {
-          console.warn('⚠️ WhatsApp not ready. Will retry job later.')
+          console.warn('⚠️ WhatsApp not ready, retrying later')
 
-          // 🔁 Revert job back to to_do
+          // ⏪ revert so cron can retry
           await ScheduledJob.findByIdAndUpdate(job._id, {
             job_status: 'to_do',
           })
+          continue
+        }
 
-          continue // ⛔ Do NOT fail cron
+        // 📞 normalize phone number
+        let phone = job.job_json?.phone?.toString().trim() || ''
+        phone = phone.replace(/\D/g, '') // remove non-digits
+        if (phone.length === 10) phone = `91${phone}`
+
+        if (!phone || !job.job_json?.message) {
+          throw new Error('Invalid WhatsApp payload')
         }
 
         await sendScheduledWhatsAppJob({
-          phone: job.job_json?.phone,
-          message: job.job_json?.message,
+          phone,
+          message: job.job_json.message,
           mediaUrl: job.job_media_url || undefined,
         })
       }
@@ -66,11 +74,10 @@ async function runJobs() {
       })
 
       await ScheduledJob.findByIdAndDelete(job._id)
-
     } catch (err) {
       console.error('Job error — will retry:', err)
 
-      // 🔁 IMPORTANT: retry later instead of failing forever
+      // ⏪ retry later
       await ScheduledJob.findByIdAndUpdate(job._id, {
         job_status: 'to_do',
       })
@@ -92,7 +99,6 @@ export async function POST(req: Request) {
   }
 
   const processed = await runJobs()
-
   return NextResponse.json({ success: true, processed })
 }
 
@@ -106,6 +112,5 @@ export async function GET(req: Request) {
   }
 
   const processed = await runJobs()
-
   return NextResponse.json({ success: true, processed })
 }
