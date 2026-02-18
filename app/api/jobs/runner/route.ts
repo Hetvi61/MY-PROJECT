@@ -7,7 +7,6 @@ import PastJob from '@/models/PastJob'
 
 import {
   initWhatsApp,
-  getWhatsAppStatus,
   sendScheduledWhatsAppJob,
 } from '@/lib/whatsapp'
 
@@ -21,33 +20,20 @@ async function runJobs() {
     job_status: 'to_do',
   })
 
-  // ✅ initialize WhatsApp INSIDE execution
+  // 🔑 Initialize WhatsApp (best effort)
   initWhatsApp()
-
-  const waStatus = getWhatsAppStatus()
 
   for (const job of jobs) {
     try {
-      // 🔹 mark in progress
+      // 🔹 mark job in progress
       await ScheduledJob.findByIdAndUpdate(job._id, {
         job_status: 'in_progress',
       })
 
-      /* ================= WHATSAPP TASK ================= */
+      /* ================= WHATSAPP SEND ================= */
       if (job.job_type === 'whatsapp') {
-        if (!waStatus.ready) {
-          console.warn('⚠️ WhatsApp not ready, retrying later')
-
-          // ⏪ revert so cron can retry
-          await ScheduledJob.findByIdAndUpdate(job._id, {
-            job_status: 'to_do',
-          })
-          continue
-        }
-
-        // 📞 normalize phone number
-        let phone = job.job_json?.phone?.toString().trim() || ''
-        phone = phone.replace(/\D/g, '') // remove non-digits
+        let phone = job.job_json?.phone?.toString() || ''
+        phone = phone.replace(/\D/g, '')
         if (phone.length === 10) phone = `91${phone}`
 
         if (!phone || !job.job_json?.message) {
@@ -74,13 +60,23 @@ async function runJobs() {
       })
 
       await ScheduledJob.findByIdAndDelete(job._id)
-    } catch (err) {
-      console.error('Job error — will retry:', err)
 
-      // ⏪ retry later
-      await ScheduledJob.findByIdAndUpdate(job._id, {
-        job_status: 'to_do',
+    } catch (err) {
+      console.error('Job failed:', err)
+
+      /* ================= MOVE TO PAST (FAILED) ================= */
+      await PastJob.create({
+        client_name: job.client_name,
+        job_name: job.job_name,
+        job_type: job.job_type,
+        job_json: job.job_json,
+        job_media_url: job.job_media_url,
+        job_status: 'failed',
+        created_datetime: job.created_datetime,
+        delivered_datetime: new Date(),
       })
+
+      await ScheduledJob.findByIdAndDelete(job._id)
     }
   }
 
