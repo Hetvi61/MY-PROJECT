@@ -17,7 +17,8 @@ async function runJobs() {
 
   for (const job of jobs) {
     try {
-      // 🔹 Mark job in progress
+      console.log('🚀 RUNNING JOB:', job._id.toString())
+
       await ScheduledJob.findByIdAndUpdate(job._id, {
         job_status: 'in_progress',
       })
@@ -28,29 +29,44 @@ async function runJobs() {
         phone = phone.replace(/\D/g, '')
 
         if (phone.length === 10) phone = `91${phone}`
-
-        // ✅ REQUIRED by WhatsApp
         const whatsappTo = `${phone}@c.us`
 
         if (!phone || !job.job_json?.message) {
           throw new Error('Invalid WhatsApp payload')
         }
 
-        const res = await fetch(process.env.WHATSAPP_WORKER_URL!, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: whatsappTo,
-            message: job.job_json.message,
-            mediaUrl: job.job_media_url || null,
-          }),
-        })
+        const workerUrl = process.env.WHATSAPP_WORKER_URL
+        console.log('🌍 CALLING WORKER:', workerUrl)
 
-        const data = await res.json()
+        if (!workerUrl) {
+          throw new Error('WHATSAPP_WORKER_URL not set')
+        }
+
+        let res
+        let responseText = ''
+
+        try {
+          res = await fetch(workerUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: whatsappTo,
+              message: job.job_json.message,
+              mediaUrl: job.job_media_url || null,
+            }),
+          })
+
+          responseText = await res.text()
+          console.log('📡 WORKER STATUS:', res.status)
+          console.log('📡 WORKER RESPONSE:', responseText)
+
+        } catch (fetchErr: any) {
+          console.error('🔥 FETCH FAILED:', fetchErr.message)
+          throw fetchErr
+        }
 
         if (!res.ok) {
-          console.error('WhatsApp worker error:', data)
-          throw new Error(data?.error || 'WhatsApp worker failed')
+          throw new Error(`Worker error: ${responseText}`)
         }
       }
 
@@ -69,7 +85,7 @@ async function runJobs() {
       await ScheduledJob.findByIdAndDelete(job._id)
 
     } catch (err: any) {
-      console.error('❌ Job failed:', err.message)
+      console.error('❌ JOB FAILED:', err.message)
 
       /* ================= MOVE TO PAST (FAILED) ================= */
       await PastJob.create({
@@ -92,7 +108,7 @@ async function runJobs() {
 
 /* ================= CRON ================= */
 export async function POST(req: Request) {
-  console.log('RUNNER HIT AT', new Date().toISOString())
+  console.log('⏰ RUNNER HIT AT', new Date().toISOString())
 
   const headerSecret = req.headers.get('x-cron-secret')
   const envSecret = process.env.CRON_SECRET?.trim()
