@@ -3,16 +3,14 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 
 // ✅ START SCHEDULER INSIDE NEXT.JS
-import { startScheduler } from "@/lib/scheduler"
+import { startScheduler ,  } from "@/lib/scheduler"
 
-// ✅ INIT WHATSAPP ONCE FOR ENTIRE APP
-import { initWhatsApp } from "@/lib/whatsapp"
+
 
 // 🔒 make sure scheduler starts only once
 startScheduler()
 
-// 🔒 start WhatsApp only once (shared by scheduler + UI)
-initWhatsApp()
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

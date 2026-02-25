@@ -8,12 +8,7 @@ export default function WhatsAppAuthPage() {
   const [ready, setReady] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  // ✅ STEP 1: START WHATSAPP ONCE
-  useEffect(() => {
-    fetch('/api/whatsapp/init').catch(console.error)
-  }, [])
-
-  // ✅ STEP 2: ONLY CHECK STATUS
+  // ✅ ONLY POLL STATUS
   useEffect(() => {
     const loadStatus = async () => {
       try {
@@ -41,20 +36,17 @@ export default function WhatsAppAuthPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">
-        WhatsApp Authentication
-      </h1>
+      <h1 className="text-xl font-bold mb-4">WhatsApp Authentication</h1>
 
       <div className="bg-white p-6 border rounded max-w-3xl">
         {ready && (
           <>
-            <div className="bg-green-100 text-green-800 px-4 py-3 rounded mb-4 font-medium">
+            <div className="bg-green-100 text-green-800 px-4 py-3 rounded mb-4">
               WhatsApp Connected Successfully
             </div>
-
             <button
               onClick={logout}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded font-semibold"
+              className="bg-red-600 text-white px-6 py-3 rounded"
             >
               Logout WhatsApp
             </button>
@@ -63,24 +55,13 @@ export default function WhatsAppAuthPage() {
 
         {!ready && qr && (
           <>
-            <p className="mb-3 text-gray-700 font-medium">
-              Scan this QR code using WhatsApp mobile app
-            </p>
-
-            <div className="inline-block bg-white border p-4 rounded mb-4">
-              <QRCode value={qr} size={240} />
-            </div>
-
-            <p className="text-sm text-gray-500 mb-4">
-              WhatsApp → Settings → Linked Devices → Link a device
-            </p>
+            <p className="mb-3">Scan QR code</p>
+            <QRCode value={qr} size={240} />
           </>
         )}
 
         {!ready && !qr && (
-          <div className="text-gray-500">
-            {loading ? 'Loading WhatsApp status…' : 'Waiting for QR code…'}
-          </div>
+          <div>{loading ? 'Loading…' : 'Waiting for QR…'}</div>
         )}
       </div>
     </div>
