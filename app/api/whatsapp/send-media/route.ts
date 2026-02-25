@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server'
-import { initWhatsApp, sendWhatsAppMessage, getWhatsAppStatus } from '@/lib/whatsapp'
+import {
+  initWhatsApp,
+  sendWhatsAppMessage,
+  getWhatsAppStatus,
+} from '@/lib/whatsapp'
 import { MessageMedia } from 'whatsapp-web.js'
 import fs from 'fs'
 import path from 'path'
 
 export async function POST(req: Request) {
   try {
-    //  Initialize WhatsApp
+    // ✅ safe init
     initWhatsApp()
 
     const status = getWhatsAppStatus()
@@ -17,7 +21,6 @@ export async function POST(req: Request) {
       )
     }
 
-    //  READ FORM DATA (IMPORTANT)
     const formData = await req.formData()
 
     const phone = formData.get('phone') as string
@@ -31,16 +34,20 @@ export async function POST(req: Request) {
       )
     }
 
-    //  NORMALIZE PHONE (ADD COUNTRY CODE)
     const rawPhone = phone.replace(/\D/g, '')
     const cleanPhone =
       rawPhone.length === 10 ? `91${rawPhone}` : rawPhone
 
-    //  SAVE FILE TEMPORARILY
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'whatsapp')
+    const uploadDir = path.join(
+      process.cwd(),
+      'public',
+      'uploads',
+      'whatsapp'
+    )
+
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true })
     }
@@ -48,10 +55,8 @@ export async function POST(req: Request) {
     const filePath = path.join(uploadDir, file.name)
     fs.writeFileSync(filePath, buffer)
 
-    //  CREATE WHATSAPP MEDIA
     const media = MessageMedia.fromFilePath(filePath)
 
-    // SEND MEDIA
     await sendWhatsAppMessage(cleanPhone, media, caption)
 
     return NextResponse.json({ success: true })

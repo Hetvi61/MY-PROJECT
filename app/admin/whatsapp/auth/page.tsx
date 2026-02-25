@@ -8,22 +8,28 @@ export default function WhatsAppAuthPage() {
   const [ready, setReady] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  async function loadStatus() {
-    try {
-      const res = await fetch('/api/whatsapp/auth')
-      const data = await res.json()
-      setQr(data.qr)
-      setReady(data.ready)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // ✅ STEP 1: START WHATSAPP ONCE
   useEffect(() => {
+    fetch('/api/whatsapp/init').catch(console.error)
+  }, [])
+
+  // ✅ STEP 2: ONLY CHECK STATUS
+  useEffect(() => {
+    const loadStatus = async () => {
+      try {
+        const res = await fetch('/api/whatsapp/status')
+        const data = await res.json()
+        setQr(data.qr)
+        setReady(data.ready)
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     loadStatus()
-    const interval = setInterval(loadStatus, 2000)
+    const interval = setInterval(loadStatus, 3000)
     return () => clearInterval(interval)
   }, [])
 
@@ -35,18 +41,15 @@ export default function WhatsAppAuthPage() {
 
   return (
     <div className="p-6">
-      {/* PAGE TITLE */}
       <h1 className="text-xl font-bold mb-4">
         WhatsApp Authentication
       </h1>
 
-      {/* MAIN BOX (LIKE CLIENT LOGO PAGE) */}
       <div className="bg-white p-6 border rounded max-w-3xl">
-        {/* CONNECTED */}
         {ready && (
           <>
             <div className="bg-green-100 text-green-800 px-4 py-3 rounded mb-4 font-medium">
-               WhatsApp Connected Successfully
+              WhatsApp Connected Successfully
             </div>
 
             <button
@@ -58,7 +61,6 @@ export default function WhatsAppAuthPage() {
           </>
         )}
 
-        {/* QR CODE */}
         {!ready && qr && (
           <>
             <p className="mb-3 text-gray-700 font-medium">
@@ -72,17 +74,9 @@ export default function WhatsAppAuthPage() {
             <p className="text-sm text-gray-500 mb-4">
               WhatsApp → Settings → Linked Devices → Link a device
             </p>
-
-            <button
-              onClick={loadStatus}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded font-semibold"
-            >
-              Refresh QR
-            </button>
           </>
         )}
 
-        {/* LOADING / WAITING */}
         {!ready && !qr && (
           <div className="text-gray-500">
             {loading ? 'Loading WhatsApp status…' : 'Waiting for QR code…'}
@@ -92,4 +86,3 @@ export default function WhatsAppAuthPage() {
     </div>
   )
 }
-

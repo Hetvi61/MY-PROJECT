@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
-import { getWhatsAppStatus } from "@/lib/whatsapp"
+import { initWhatsApp, getWhatsAppStatus } from "@/lib/whatsapp"
 
 export async function GET() {
+  initWhatsApp()          // ✅ start WhatsApp ONLY ONCE
   return NextResponse.json(getWhatsAppStatus())
 }

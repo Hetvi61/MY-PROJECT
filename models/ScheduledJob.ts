@@ -53,6 +53,11 @@ const ScheduledJobSchema = new Schema({
     type: Date,
     required: true,
   },
+  created_from: {
+    type: String,
+    enum: ["ui", "api"],
+    default: "ui"
+  },
 })
 
 export default models.ScheduledJob ||

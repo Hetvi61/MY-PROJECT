@@ -32,11 +32,13 @@ export default function ScheduledJobsPage() {
     scheduled_datetime: '',
     job_type: 'post',
 
-    // 🟢 WhatsApp fields
+    // WhatsApp fields
     whatsapp_number: '',
     message_text: '',
-    job_media_url: '',
   })
+
+  // ✅ NEW: store file only (no upload here)
+  const [file, setFile] = useState<File | null>(null)
 
   /* ================= LOAD DATA ================= */
   useEffect(() => {
@@ -53,7 +55,7 @@ export default function ScheduledJobsPage() {
       })
   }, [])
 
-  /* ================= CLIENT CHANGE (KEY FIX) ================= */
+  /* ================= CLIENT CHANGE ================= */
   function onClientChange(clientName: string) {
     const client = clients.find(
       (c: any) => c.clientName === clientName
@@ -66,7 +68,6 @@ export default function ScheduledJobsPage() {
     }))
   }
 
-
   /* ================= CREATE JOB ================= */
   async function submit() {
     if (!form.job_name || !form.client_name || !form.scheduled_datetime) {
@@ -76,17 +77,35 @@ export default function ScheduledJobsPage() {
 
     if (
       form.job_type === 'whatsapp' &&
-      (!form.whatsapp_number || !form.message_text)
+      (!form.whatsapp_number ||
+        (!form.message_text && !file))
     ) {
-      alert('WhatsApp number and message are required')
+      alert('WhatsApp number and message or media is required')
       return
     }
 
-    await fetch('/api/jobs/scheduled', {
+    // ✅ SEND EVERYTHING TO ONE ROUTE
+    const formData = new FormData()
+    formData.append('job_name', form.job_name)
+    formData.append('client_name', form.client_name)
+    formData.append('job_type', form.job_type)
+    formData.append('scheduled_datetime', form.scheduled_datetime)
+    formData.append('whatsapp_number', form.whatsapp_number || '')
+    formData.append('message_text', form.message_text || '')
+
+    if (file) {
+      formData.append('file', file)
+    }
+
+    const res = await fetch('/api/jobs/scheduled', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: formData,
     })
+
+    if (!res.ok) {
+      alert('Job creation failed')
+      return
+    }
 
     location.reload()
   }
@@ -145,7 +164,7 @@ export default function ScheduledJobsPage() {
                 className="border p-2 rounded"
                 placeholder="WhatsApp Number"
                 value={form.whatsapp_number}
-                readOnly   // ✅ important
+                readOnly
               />
 
               <textarea
@@ -156,13 +175,21 @@ export default function ScheduledJobsPage() {
                 }
               />
 
+              {/* ✅ FILE PICK ONLY (NO UPLOAD HERE) */}
               <input
+                type="file"
+                accept="image/*,video/*,application/pdf"
                 className="border p-2 rounded col-span-2"
-                placeholder="Media URL (optional)"
                 onChange={e =>
-                  setForm({ ...form, job_media_url: e.target.value })
+                  setFile(e.target.files?.[0] || null)
                 }
               />
+
+              {file && (
+                <p className="col-span-2 text-sm text-green-600">
+                  File selected: {file.name}
+                </p>
+              )}
             </>
           )}
           {/* ===================================== */}
@@ -186,7 +213,7 @@ export default function ScheduledJobsPage() {
             <th className="border p-2">Job</th>
             <th className="border p-2">Client</th>
             <th className="border p-2">Type</th>
-            <th className="border p-2">Scheduled (IST)</th>
+            <th className="border p-2">Scheduled</th>
             <th className="border p-2">Status</th>
           </tr>
         </thead>
