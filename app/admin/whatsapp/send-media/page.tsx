@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -6,6 +7,15 @@ type Client = {
   _id: string
   name: string
   mobiles: string[]
+}
+
+type RawClient = {
+  _id?: string
+  clientName?: string
+  ClientName?: string
+  mobile?: string | null
+  alternateMobile?: string | number | null
+  mobileNumbers?: unknown
 }
 
 export default function SendMediaPage() {
@@ -22,9 +32,13 @@ export default function SendMediaPage() {
     fetch('/api/client')
       .then(res => res.json())
       .then(data => {
-        const list = data.clients || data || []
+        const list = Array.isArray(data?.clients)
+          ? data.clients
+          : Array.isArray(data)
+            ? data
+            : []
 
-        const normalized = list.map((c: any) => {
+        const normalized = (list as RawClient[]).map(c => {
           let nums: string[] = []
 
           if (typeof c.mobile === 'string') {
@@ -32,13 +46,13 @@ export default function SendMediaPage() {
           }
           if (c.alternateMobile) nums.push(String(c.alternateMobile))
           if (Array.isArray(c.mobileNumbers)) {
-            c.mobileNumbers.forEach((m: any) => nums.push(String(m)))
+            c.mobileNumbers.forEach((m: unknown) => nums.push(String(m)))
           }
 
           nums = Array.from(new Set(nums)).filter(Boolean)
 
           return {
-            _id: c._id,
+            _id: c._id || '',
             name: c.clientName || c.ClientName || 'Unnamed Client',
             mobiles: nums,
           }
@@ -49,7 +63,7 @@ export default function SendMediaPage() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/whatsapp/auth')
+    fetch('/api/whatsapp/status')
       .then(res => res.json())
       .then(d => setConnected(Boolean(d.ready)))
   }, [])

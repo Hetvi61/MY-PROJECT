@@ -8,8 +8,11 @@ export default function WhatsAppAuthPage() {
   const [ready, setReady] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  // ✅ ONLY POLL STATUS
+  // ✅ START WHATSAPP ONCE + POLL STATUS
   useEffect(() => {
+    // 🔥 Start WhatsApp (IMPORTANT)
+    fetch('/api/whatsapp/auth')
+
     const loadStatus = async () => {
       try {
         const res = await fetch('/api/whatsapp/status')
@@ -28,6 +31,7 @@ export default function WhatsAppAuthPage() {
     return () => clearInterval(interval)
   }, [])
 
+  // ✅ LOGOUT (FIXED)
   async function logout() {
     await fetch('/api/whatsapp/logout', { method: 'POST' })
     setQr(null)

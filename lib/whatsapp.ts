@@ -1,18 +1,52 @@
 import { Client, LocalAuth, MessageMedia } from "whatsapp-web.js"
 
-let client: Client | null = null
-let qrCode: string | null = null
-let isReady = false
-let isInitializing = false
+type WhatsAppState = {
+  client: Client | null
+  qrCode: string | null
+  isReady: boolean
+  isInitializing: boolean
+  sendQueue: Promise<unknown>
+  queueDepth: number
+}
+
+declare global {
+  var __WHATSAPP_STATE__: WhatsAppState | undefined
+}
+
+const state: WhatsAppState = global.__WHATSAPP_STATE__ ?? {
+  client: null,
+  qrCode: null,
+  isReady: false,
+  isInitializing: false,
+  sendQueue: Promise.resolve(),
+  queueDepth: 0,
+}
+
+global.__WHATSAPP_STATE__ = state
+
+function runWithSendLock<T>(task: () => Promise<T>): Promise<T> {
+  state.queueDepth += 1
+
+  const run = state.sendQueue.then(task, task)
+
+  state.sendQueue = run
+    .then(() => undefined)
+    .catch(() => undefined)
+    .finally(() => {
+      state.queueDepth = Math.max(0, state.queueDepth - 1)
+    })
+
+  return run
+}
 
 // ================= INIT =================
 export function initWhatsApp() {
-  if (client && isReady) return
-  if (isInitializing) return
-  isInitializing = true
+  if (state.client && state.isReady) return
+  if (state.isInitializing) return
+  state.isInitializing = true
 
-  if (!client) {
-    client = new Client({
+  if (!state.client) {
+    const nextClient = new Client({
       authStrategy: new LocalAuth({
         dataPath: "whatsapp-session",
       }),
@@ -22,42 +56,46 @@ export function initWhatsApp() {
       },
     })
 
-    client.on("qr", (qr) => {
-      qrCode = qr
-      isReady = false
+    nextClient.on("qr", (qr) => {
+      state.qrCode = qr
+      state.isReady = false
     })
 
-    client.on("ready", () => {
-      isReady = true
-      qrCode = null
-      isInitializing = false
+    nextClient.on("ready", () => {
+      state.isReady = true
+      state.qrCode = null
+      state.isInitializing = false
       console.log("✅ WhatsApp READY")
     })
 
-    client.on("auth_failure", () => {
+    nextClient.on("auth_failure", () => {
       console.log("❌ WhatsApp AUTH FAILURE")
-      isReady = false
-      qrCode = null
-      isInitializing = false
+      state.isReady = false
+      state.qrCode = null
+      state.isInitializing = false
     })
 
-    client.on("disconnected", () => {
+    nextClient.on("disconnected", () => {
       console.log("❌ WhatsApp DISCONNECTED")
-      isReady = false
-      qrCode = null
+      state.isReady = false
+      state.qrCode = null
+      state.isInitializing = false
     })
 
-    client.initialize()
+    state.client = nextClient
+    nextClient.initialize()
   } else {
-    isInitializing = false
+    state.isInitializing = false
   }
 }
 
 // ================= STATUS =================
 export function getWhatsAppStatus() {
   return {
-    ready: isReady,
-    qr: qrCode,
+    ready: state.isReady,
+    qr: state.qrCode,
+    sending: state.queueDepth > 0,
+    queueDepth: state.queueDepth,
   }
 }
 
@@ -67,18 +105,21 @@ export async function sendWhatsAppMessage(
   content: string | MessageMedia,
   caption?: string
 ) {
-  if (!client || !isReady) {
-    throw new Error("WhatsApp not connected")
-  }
+  return runWithSendLock(async () => {
+    if (!state.client || !state.isReady) {
+      throw new Error("WhatsApp not connected")
+    }
 
-  const numberId = await client.getNumberId(phone)
-  const chatId = numberId?._serialized || `${phone}@c.us`
+    const numberId = await state.client.getNumberId(phone)
+    const chatId = numberId?._serialized || `${phone}@c.us`
 
-  if (typeof content === "string") {
-    await client.sendMessage(chatId, content)
-  } else {
-    await client.sendMessage(chatId, content, { caption })
-  }
+    if (typeof content === "string") {
+      await state.client.sendMessage(chatId, content)
+      return
+    }
+
+    await state.client.sendMessage(chatId, content, { caption })
+  })
 }
 
 // ================= SCHEDULER WRAPPER =================
@@ -87,7 +128,7 @@ export async function sendScheduledWhatsAppJob(params: {
   message?: string
   mediaUrl?: string
 }) {
-  if (!client || !isReady) {
+  if (!state.client || !state.isReady) {
     throw new Error("WhatsApp not ready")
   }
 
@@ -103,12 +144,12 @@ export async function sendScheduledWhatsAppJob(params: {
 
 // ================= LOGOUT =================
 export async function logoutWhatsApp() {
-  if (client) {
-    await client.destroy()
-    client = null
-    qrCode = null
-    isReady = false
-    isInitializing = false
+  if (state.client) {
+    await state.client.destroy()
+    state.client = null
+    state.qrCode = null
+    state.isReady = false
+    state.isInitializing = false
     console.log("🔒 WhatsApp LOGGED OUT")
   }
 }
