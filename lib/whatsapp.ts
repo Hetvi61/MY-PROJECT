@@ -1,4 +1,6 @@
 import { Client, LocalAuth, MessageMedia } from "whatsapp-web.js"
+import fs from "fs"               // 🔴 ADDED
+import path from "path"           // 🔴 ADDED
 
 type WhatsAppState = {
   client: Client | null
@@ -23,6 +25,9 @@ const state: WhatsAppState = global.__WHATSAPP_STATE__ ?? {
 }
 
 global.__WHATSAPP_STATE__ = state
+
+// 🔴 ADDED: must match LocalAuth dataPath
+const SESSION_PATH = path.join(process.cwd(), "whatsapp-session")
 
 function runWithSendLock<T>(task: () => Promise<T>): Promise<T> {
   state.queueDepth += 1
@@ -144,12 +149,26 @@ export async function sendScheduledWhatsAppJob(params: {
 
 // ================= LOGOUT =================
 export async function logoutWhatsApp() {
-  if (state.client) {
-    await state.client.destroy()
+  try {
+    if (state.client) {
+      await state.client.logout().catch(() => {})
+      await state.client.destroy()
+    }
+
+    // reset in-memory state
     state.client = null
     state.qrCode = null
     state.isReady = false
     state.isInitializing = false
-    console.log("🔒 WhatsApp LOGGED OUT")
+
+    // 🔥 REAL FIX: delete LocalAuth session
+    if (fs.existsSync(SESSION_PATH)) {
+      fs.rmSync(SESSION_PATH, { recursive: true, force: true })
+      console.log("🧹 WhatsApp session folder deleted")
+    }
+
+    console.log("🔒 WhatsApp FULL LOGOUT COMPLETE")
+  } catch (err) {
+    console.error("❌ WhatsApp logout failed", err)
   }
 }

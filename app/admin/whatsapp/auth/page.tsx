@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react' // 🔴 useRef added
 import QRCode from 'react-qr-code'
 
 export default function WhatsAppAuthPage() {
@@ -8,34 +8,42 @@ export default function WhatsAppAuthPage() {
   const [ready, setReady] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  // ✅ START WHATSAPP ONCE + POLL STATUS
-  useEffect(() => {
-    // 🔥 Start WhatsApp (IMPORTANT)
-    fetch('/api/whatsapp/auth')
+  // 🔴 ADDED: prevents repeated init calls
+  const initCalledRef = useRef(false)
 
-    const loadStatus = async () => {
+  useEffect(() => {
+    const loadStatusAndInit = async () => {
       try {
         const res = await fetch('/api/whatsapp/status')
         const data = await res.json()
+
         setQr(data.qr)
         setReady(data.ready)
+        setLoading(false)
+
+        // 🔥 FIX: init ONLY ONCE
+        if (!data.ready && !data.qr && !initCalledRef.current) {
+          initCalledRef.current = true
+          await fetch('/api/whatsapp/auth')
+        }
       } catch (e) {
         console.error(e)
-      } finally {
-        setLoading(false)
       }
     }
 
-    loadStatus()
-    const interval = setInterval(loadStatus, 3000)
+    loadStatusAndInit()
+    const interval = setInterval(loadStatusAndInit, 3000)
     return () => clearInterval(interval)
   }, [])
 
-  // ✅ LOGOUT (FIXED)
   async function logout() {
     await fetch('/api/whatsapp/logout', { method: 'POST' })
     setQr(null)
     setReady(false)
+    setLoading(true)
+
+    // 🔴 RESET init flag so QR can appear again
+    initCalledRef.current = false
   }
 
   return (
