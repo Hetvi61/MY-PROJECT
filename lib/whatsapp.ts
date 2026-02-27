@@ -1,6 +1,6 @@
-import { Client, LocalAuth, MessageMedia } from "whatsapp-web.js"
-import fs from "fs"               // 🔴 ADDED
-import path from "path"           // 🔴 ADDED
+import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js'
+import { rmSync } from 'fs'
+import { join } from 'path'
 
 type WhatsAppState = {
   client: Client | null
@@ -15,19 +15,17 @@ declare global {
   var __WHATSAPP_STATE__: WhatsAppState | undefined
 }
 
-const state: WhatsAppState = global.__WHATSAPP_STATE__ ?? {
-  client: null,
-  qrCode: null,
-  isReady: false,
-  isInitializing: false,
-  sendQueue: Promise.resolve(),
-  queueDepth: 0,
-}
+const state: WhatsAppState =
+  global.__WHATSAPP_STATE__ ?? {
+    client: null,
+    qrCode: null,
+    isReady: false,
+    isInitializing: false,
+    sendQueue: Promise.resolve(),
+    queueDepth: 0,
+  }
 
 global.__WHATSAPP_STATE__ = state
-
-// 🔴 ADDED: must match LocalAuth dataPath
-const SESSION_PATH = path.join(process.cwd(), "whatsapp-session")
 
 function runWithSendLock<T>(task: () => Promise<T>): Promise<T> {
   state.queueDepth += 1
@@ -46,42 +44,43 @@ function runWithSendLock<T>(task: () => Promise<T>): Promise<T> {
 
 // ================= INIT =================
 export function initWhatsApp() {
-  if (state.client && state.isReady) return
   if (state.isInitializing) return
+  if (state.client && state.isReady) return
+
   state.isInitializing = true
 
   if (!state.client) {
     const nextClient = new Client({
       authStrategy: new LocalAuth({
-        dataPath: "whatsapp-session",
+        dataPath: 'whatsapp-session',
       }),
       puppeteer: {
         headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
       },
     })
 
-    nextClient.on("qr", (qr) => {
+    nextClient.on('qr', qr => {
       state.qrCode = qr
       state.isReady = false
     })
 
-    nextClient.on("ready", () => {
+    nextClient.on('ready', () => {
       state.isReady = true
       state.qrCode = null
       state.isInitializing = false
-      console.log("✅ WhatsApp READY")
+      console.log('✅ WhatsApp READY')
     })
 
-    nextClient.on("auth_failure", () => {
-      console.log("❌ WhatsApp AUTH FAILURE")
+    nextClient.on('auth_failure', () => {
+      console.log('❌ WhatsApp AUTH FAILURE')
       state.isReady = false
       state.qrCode = null
       state.isInitializing = false
     })
 
-    nextClient.on("disconnected", () => {
-      console.log("❌ WhatsApp DISCONNECTED")
+    nextClient.on('disconnected', () => {
+      console.log('❌ WhatsApp DISCONNECTED')
       state.isReady = false
       state.qrCode = null
       state.isInitializing = false
@@ -112,13 +111,13 @@ export async function sendWhatsAppMessage(
 ) {
   return runWithSendLock(async () => {
     if (!state.client || !state.isReady) {
-      throw new Error("WhatsApp not connected")
+      throw new Error('WhatsApp not connected')
     }
 
     const numberId = await state.client.getNumberId(phone)
     const chatId = numberId?._serialized || `${phone}@c.us`
 
-    if (typeof content === "string") {
+    if (typeof content === 'string') {
       await state.client.sendMessage(chatId, content)
       return
     }
@@ -134,7 +133,7 @@ export async function sendScheduledWhatsAppJob(params: {
   mediaUrl?: string
 }) {
   if (!state.client || !state.isReady) {
-    throw new Error("WhatsApp not ready")
+    throw new Error('WhatsApp not ready')
   }
 
   const { phone, message, mediaUrl } = params
@@ -149,26 +148,33 @@ export async function sendScheduledWhatsAppJob(params: {
 
 // ================= LOGOUT =================
 export async function logoutWhatsApp() {
-  try {
-    if (state.client) {
-      await state.client.logout().catch(() => {})
+  if (state.client) {
+    try {
+      await state.client.logout()
+    } catch (e) {
+      console.error('Logout error:', e)
+    }
+
+    try {
       await state.client.destroy()
+    } catch (e) {
+      console.error('Destroy error:', e)
     }
-
-    // reset in-memory state
-    state.client = null
-    state.qrCode = null
-    state.isReady = false
-    state.isInitializing = false
-
-    // 🔥 REAL FIX: delete LocalAuth session
-    if (fs.existsSync(SESSION_PATH)) {
-      fs.rmSync(SESSION_PATH, { recursive: true, force: true })
-      console.log("🧹 WhatsApp session folder deleted")
-    }
-
-    console.log("🔒 WhatsApp FULL LOGOUT COMPLETE")
-  } catch (err) {
-    console.error("❌ WhatsApp logout failed", err)
   }
+
+  // ✅ DELETE THE SESSION FOLDER COMPLETELY
+  try {
+    const sessionPath = join(process.cwd(), 'whatsapp-session')
+    rmSync(sessionPath, { recursive: true, force: true })
+    console.log('🔥 Session folder deleted')
+  } catch (e) {
+    console.error('Session deletion error:', e)
+  }
+
+  // Reset state
+  state.client = null
+  state.qrCode = null
+  state.isReady = false
+  state.isInitializing = false
+  console.log('🔒 WhatsApp LOGGED OUT')
 }
