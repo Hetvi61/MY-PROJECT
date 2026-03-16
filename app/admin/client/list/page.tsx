@@ -156,6 +156,8 @@ export default function ClientListPage() {
                       </td>
 
                       <td className="border px-4 py-3 text-center flex gap-2 justify-center">
+
+                        {/* EDIT BUTTON */}
                         <button
                           onClick={() =>
                             router.push(`/admin/client/edit/${c._id}`)
@@ -165,12 +167,24 @@ export default function ClientListPage() {
                           Edit
                         </button>
 
+                        {/* DELETE BUTTON */}
                         <button
                           onClick={() => deleteClient(c._id)}
                           className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
                         >
                           Delete
                         </button>
+
+                        {/* NEW BUTTON */}
+                        <button
+                          onClick={() =>
+                            router.push(`/admin/flow?clientId=${c._id}`)
+                          }
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                        >
+                          Start Automation
+                        </button>
+
                       </td>
                     </tr>
                   ))
@@ -183,4 +197,3 @@ export default function ClientListPage() {
     </AuthGuard>
   )
 }
-

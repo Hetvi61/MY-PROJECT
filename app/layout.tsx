@@ -2,12 +2,12 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 
-// ✅ START SCHEDULER INSIDE NEXT.JS
+//  START SCHEDULER INSIDE NEXT.JS
 import { startScheduler ,  } from "@/lib/scheduler"
 
 
 
-// 🔒 make sure scheduler starts only once
+//  make sure scheduler starts only once
 startScheduler()
 
 

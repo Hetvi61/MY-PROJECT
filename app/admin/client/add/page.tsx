@@ -227,7 +227,7 @@ export default function AddClientPage() {
 
         <button
           onClick={saveClient}
-          className="mt-6 bg-black text-white px-6 py-2 rounded"
+          className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded"
         >
           Save Client
         </button>

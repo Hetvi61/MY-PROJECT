@@ -37,7 +37,7 @@ export default function ScheduledJobsPage() {
     message_text: '',
   })
 
-  // ✅ NEW: store file only (no upload here)
+  //  NEW: store file only (no upload here)
   const [file, setFile] = useState<File | null>(null)
 
   /* ================= LOAD DATA ================= */
@@ -84,7 +84,7 @@ export default function ScheduledJobsPage() {
       return
     }
 
-    // ✅ SEND EVERYTHING TO ONE ROUTE
+    //  SEND EVERYTHING TO ONE ROUTE
     const formData = new FormData()
     formData.append('job_name', form.job_name)
     formData.append('client_name', form.client_name)
@@ -175,7 +175,7 @@ export default function ScheduledJobsPage() {
                 }
               />
 
-              {/* ✅ FILE PICK ONLY (NO UPLOAD HERE) */}
+              {/*  FILE PICK ONLY (NO UPLOAD HERE) */}
               <input
                 type="file"
                 accept="image/*,video/*,application/pdf"

@@ -15,16 +15,10 @@ export default function AdminLayout({
 
   const [openClient, setOpenClient] = useState(false)
   const [openWhatsapp, setOpenWhatsapp] = useState(false)
-
-  // 🔑 TEMPLATE STATE
   const [openTemplates, setOpenTemplates] = useState(false)
-
-  // 🔑 JOBS STATE (NEW)
   const [openJobs, setOpenJobs] = useState(false)
-
   const [openProfile, setOpenProfile] = useState(false)
 
-  // ================= AUTO OPEN MENU =================
   useEffect(() => {
     if (pathname.startsWith('/admin/client')) {
       setOpenClient(true)
@@ -38,7 +32,6 @@ export default function AdminLayout({
       setOpenTemplates(true)
     }
 
-    // 🔑 JOBS AUTO OPEN (NEW)
     if (pathname.startsWith('/admin/jobs')) {
       setOpenJobs(true)
     }
@@ -52,9 +45,11 @@ export default function AdminLayout({
   return (
     <AuthGuard>
       <div className="min-h-screen">
+
         {/* ================= SIDEBAR ================= */}
-        <aside className="fixed left-0 top-0 w-64 h-screen bg-gray-900 text-white p-4 flex flex-col justify-between">
-          <div>
+        <aside className="fixed left-0 top-0 w-64 h-screen bg-slate-900 text-white p-4 flex flex-col">
+
+          <div className="flex-1 overflow-y-auto pr-2">
             <h2 className="text-xl font-bold mb-6">Admin Panel</h2>
 
             <nav className="flex flex-col gap-2">
@@ -86,30 +81,14 @@ export default function AdminLayout({
 
               {openClient && (
                 <div className="ml-4 flex flex-col gap-1">
-                  <Link href="/admin/client/add" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Add Client
-                  </Link>
-                  <Link href="/admin/client/list" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Client List
-                  </Link>
-                  <Link href="/admin/client/address" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Client Address
-                  </Link>
-                  <Link href="/admin/client/owner" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Client Owner
-                  </Link>
-                  <Link href="/admin/client/logo" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Client Logo
-                  </Link>
-                  <Link href="/admin/client/color-palette" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Client Color Palette
-                  </Link>
-                  <Link href="/admin/client/product" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Client Product
-                  </Link>
-                  <Link href="/admin/client/product-category" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Client Product Category
-                  </Link>
+                  <Link href="/admin/client/add" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Add Client</Link>
+                  <Link href="/admin/client/list" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Client List</Link>
+                  <Link href="/admin/client/address" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Client Address</Link>
+                  <Link href="/admin/client/owner" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Client Owner</Link>
+                  <Link href="/admin/client/logo" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Client Logo</Link>
+                  <Link href="/admin/client/color-palette" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Client Color Palette</Link>
+                  <Link href="/admin/client/product" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Client Product</Link>
+                  <Link href="/admin/client/product-category" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Client Product Category</Link>
                 </div>
               )}
 
@@ -123,34 +102,21 @@ export default function AdminLayout({
 
               {openTemplates && (
                 <div className="ml-4 flex flex-col gap-1">
-                  <Link
-                    href="/admin/templates/add"
-                    className="hover:bg-gray-800 px-3 py-1 rounded text-sm"
-                  >
-                    Add
-                  </Link>
-
-                  <Link
-                    href="/admin/templates/view"
-                    className="hover:bg-gray-800 px-3 py-1 rounded text-sm"
-                  >
-                    View
-                  </Link>
+                  <Link href="/admin/templates/add" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Add</Link>
+                  <Link href="/admin/templates/view" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">View</Link>
                 </div>
               )}
 
               <Link
                 href="/admin/templates/categories"
                 className={`hover:bg-gray-800 px-3 py-2 rounded ${
-                  pathname === '/admin/templates/categories'
-                    ? 'bg-gray-800'
-                    : ''
+                  pathname === '/admin/templates/categories' ? 'bg-gray-800' : ''
                 }`}
               >
                 Template Categories
               </Link>
 
-              {/* ================= JOBS (NEW) ================= */}
+              {/* ================= JOBS ================= */}
               <button
                 onClick={() => setOpenJobs(!openJobs)}
                 className="text-left hover:bg-gray-800 px-3 py-2 rounded"
@@ -160,29 +126,17 @@ export default function AdminLayout({
 
               {openJobs && (
                 <div className="ml-4 flex flex-col gap-1">
-                  <Link
-                    href="/admin/jobs/scheduled"
-                    className={`hover:bg-gray-800 px-3 py-1 rounded text-sm ${
-                      pathname === '/admin/jobs/scheduled'
-                        ? 'bg-gray-800'
-                        : ''
-                    }`}
-                  >
-                    Scheduled Jobs
-                  </Link>
-
-                  <Link
-                    href="/admin/jobs/past"
-                    className={`hover:bg-gray-800 px-3 py-1 rounded text-sm ${
-                      pathname === '/admin/jobs/past'
-                        ? 'bg-gray-800'
-                        : ''
-                    }`}
-                  >
-                    Past Jobs
-                  </Link>
+                  <Link href="/admin/jobs/scheduled" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Scheduled Jobs</Link>
+                  <Link href="/admin/jobs/past" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Past Jobs</Link>
                 </div>
               )}
+
+              {/* ================= FLOW (NEW ADDED) ================= */}
+              <Link href="/admin/flow" className="hover:bg-gray-800 px-3 py-2 rounded">
+                
+              
+                Flow Builder
+              </Link>
 
               {/* ================= WHATSAPP ================= */}
               <button
@@ -194,54 +148,30 @@ export default function AdminLayout({
 
               {openWhatsapp && (
                 <div className="ml-4 flex flex-col gap-1">
-                  <Link href="/admin/whatsapp/auth" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Auth
-                  </Link>
-                  <Link href="/admin/whatsapp/send-text" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Send Text
-                  </Link>
-                  <Link href="/admin/whatsapp/send-media" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">
-                    Send Media
-                  </Link>
+                  <Link href="/admin/whatsapp/auth" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Auth</Link>
+                  <Link href="/admin/whatsapp/send-text" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Send Text</Link>
+                  <Link href="/admin/whatsapp/send-media" className="hover:bg-gray-800 px-3 py-1 rounded text-sm">Send Media</Link>
                 </div>
               )}
 
-              <Link
-                href="/admin/business-category"
-                className={`hover:bg-gray-800 px-3 py-2 rounded ${
-                  pathname === '/admin/business-category' ? 'bg-gray-800' : ''
-                }`}
-              >
-                Business Categories
-              </Link>
-
-              <Link
-                href="/admin/client-group"
-                className={`hover:bg-gray-800 px-3 py-2 rounded ${
-                  pathname === '/admin/client-group' ? 'bg-gray-800' : ''
-                }`}
-              >
-                Client Group
-              </Link>
-
-              <Link href="/profile" className="hover:bg-gray-800 px-3 py-2 rounded">
-                Profile
-              </Link>
+              <Link href="/admin/business-category" className="hover:bg-gray-800 px-3 py-2 rounded">Business Categories</Link>
+              <Link href="/admin/client-group" className="hover:bg-gray-800 px-3 py-2 rounded">Client Group</Link>
+              <Link href="/profile" className="hover:bg-gray-800 px-3 py-2 rounded">Profile</Link>
             </nav>
           </div>
 
           <button
             onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 text-white py-2 rounded"
+            className="bg-red-600 hover:bg-red-700 text-white py-2 rounded mt-4"
           >
             Logout
           </button>
         </aside>
 
-        {/* ================= MAIN ================= */}
         <main className="ml-64 mt-14 p-6 bg-gray-100 min-h-screen">
           {children}
         </main>
+
       </div>
     </AuthGuard>
   )
